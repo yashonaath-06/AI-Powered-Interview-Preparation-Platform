@@ -17,10 +17,11 @@ faster-whisper>=1.0.3
 numpy<2.0
 ctranslate2>=4.0.0,<5.0.0
 
-# ---- Phase 9: NLP scorer  (added in PR #5) ----
-# sentence-transformers>=2.7.0
-# language-tool-python>=2.8.0
-# torch>=2.2.0  # CPU build; Linux/macOS specific wheels recommended
+# ---- Phase 9: NLP scorer ----
+sentence-transformers>=2.7.0
+textstat>=0.7.3
+# torch is pulled in transitively by sentence-transformers; on Linux/macOS the
+# default wheel is the CPU build (~200 MB). For Windows/CUDA see PyTorch docs.
 
 # ---- Phase 10: Computer vision  (added in PR #6) ----
 # mediapipe>=0.10.14

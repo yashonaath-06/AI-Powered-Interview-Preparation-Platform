@@ -1,23 +1,34 @@
 """
-Baseline answer scorer.
+Phase-9 answer scorer.
 
-Used by the interview engine in Phase 7 to give every answer a 0-10 score
-across four dimensions:
+Pipeline
+--------
+Every answer is graded along **four dimensions**, each on a 0-10 scale:
 
-    technical     — keyword coverage vs. the question's expected_keywords
-    communication — length-appropriateness + filler-word penalty
-    confidence    — fluency proxy (filler words, hedging language)
-    engagement    — substantive length proxy
+    technical      — content correctness vs. the expected/sample answer
+    communication  — clarity, length-appropriateness, readability
+    confidence     — fluency, lack of filler/hedging language
+    engagement     — substance: vocabulary diversity + length
 
-Phase 9 will replace this with real NLP (sentence-transformers + grammar
-checking) and Phase 10 will fold in vision-derived signals. The function
-signature stays the same, so callers don't need to change.
+The scorer combines:
+    1. Heuristic features (always available):
+         length, filler/hedging counts, vocabulary diversity.
+    2. NLP signals (when sentence-transformers + textstat installed):
+         semantic_similarity (vs. sample_answer / question_text),
+         soft keyword alignment, Flesch reading-ease.
+
+Design goal: produces sensible scores **with or without** the heavy ML
+deps installed. When NLP signals are present they outweigh heuristics.
 """
 from __future__ import annotations
 
 import re
 from dataclasses import dataclass
 
+from app.services import nlp_service
+
+
+# ---- Lexical features ------------------------------------------------------
 
 FILLER_WORDS = {
     "um", "uh", "umm", "uhh", "er", "ah", "like", "basically",
@@ -27,6 +38,70 @@ FILLER_WORDS = {
 HEDGING_WORDS = {"maybe", "perhaps", "i think", "i guess", "kind of", "sort of"}
 
 
+def _word_count(text: str) -> int:
+    return len(re.findall(r"\b\w+\b", text))
+
+
+def _filler_count(text: str) -> int:
+    """Count filler words/phrases. Punctuation-tolerant."""
+    # Replace non-word, non-space characters with spaces so we can use
+    # whitespace-padded substring matching.
+    cleaned = " " + re.sub(r"[^\w\s]", " ", text.lower()) + " "
+    cleaned = re.sub(r"\s+", " ", cleaned)
+    return sum(cleaned.count(f" {f} ") for f in FILLER_WORDS)
+
+
+def _hedging_count(text: str) -> int:
+    cleaned = " " + re.sub(r"[^\w\s]", " ", text.lower()) + " "
+    cleaned = re.sub(r"\s+", " ", cleaned)
+    # Hedging phrases may include spaces, so use the cleaned single-space
+    # form as the haystack.
+    return sum(cleaned.count(f" {h} ") for h in HEDGING_WORDS)
+
+
+# ---- Sub-score helpers -----------------------------------------------------
+
+def _length_score(wc: int) -> tuple[float, str | None]:
+    """Returns (score 0-10, optional note)."""
+    if wc < 10:
+        return 2.5, "Your answer was very short — try to elaborate with examples."
+    if wc < 30:
+        return 5.0, "Your answer could be more detailed."
+    if wc <= 200:
+        return 9.0, None
+    if wc <= 350:
+        return 7.5, "Your answer was a bit long; try to be more concise."
+    return 6.0, "Your answer was very long; aim for 1-2 minutes of speech."
+
+
+def _literal_keyword_coverage(text: str, keywords: list[str]) -> float:
+    if not keywords:
+        return 0.0
+    text_lo = text.lower()
+    hits = sum(1 for kw in keywords if kw.lower() in text_lo)
+    return hits / len(keywords)
+
+
+def _readability_to_score(raw: float | None) -> float | None:
+    """
+    Map Flesch reading-ease (0-100, higher = easier) to a 0-10 communication
+    sub-score. We reward readings in 50..80 (conversational).
+    """
+    if raw is None:
+        return None
+    if raw >= 70:
+        return 9.5
+    if raw >= 50:
+        return 8.5
+    if raw >= 30:
+        return 6.5
+    if raw >= 10:
+        return 4.5
+    return 2.5
+
+
+# ---- Public API ------------------------------------------------------------
+
 @dataclass
 class AnswerScore:
     technical: float
@@ -35,6 +110,7 @@ class AnswerScore:
     engagement: float
     overall: float
     notes: list[str]
+    components: dict  # diagnostic detail (used by tests + admin UI)
 
     def to_dict(self) -> dict:
         return {
@@ -44,93 +120,131 @@ class AnswerScore:
             "engagement": round(self.engagement, 2),
             "overall": round(self.overall, 2),
             "notes": self.notes,
+            "components": self.components,
         }
-
-
-def _word_count(text: str) -> int:
-    return len(re.findall(r"\b\w+\b", text))
-
-
-def _filler_count(text: str) -> int:
-    lo = " " + text.lower() + " "
-    return sum(lo.count(f" {f} ") for f in FILLER_WORDS)
 
 
 def score_answer(
     answer_text: str,
     expected_keywords: list[str] | None = None,
+    *,
+    sample_answer: str | None = None,
+    question_text: str | None = None,
 ) -> AnswerScore:
     """
-    Score an answer 0-10 across four dimensions.
+    Score one answer along 4 dimensions.
 
-    Returns an AnswerScore dataclass with `.to_dict()` for JSON serialisation.
+    Parameters
+    ----------
+    answer_text : the candidate's answer (transcript or typed)
+    expected_keywords : list of keywords the answer should ideally cover
+    sample_answer : optional reference / model answer (Phase 7 question_bank
+        already ships these for many questions)
+    question_text : the question itself; used as a fallback semantic
+        reference when no sample_answer is available
     """
     text = (answer_text or "").strip()
     notes: list[str] = []
+    components: dict = {}
 
     if not text:
-        notes.append("No answer was given.")
-        return AnswerScore(0, 0, 0, 0, 0, notes)
+        return AnswerScore(0, 0, 0, 0, 0, ["No answer was given."], components)
 
     wc = _word_count(text)
+    components["word_count"] = wc
 
-    # ---- Length sub-score (sweet spot 50-180 words) ---------------------
-    if wc < 10:
-        length_score = 2.5
-        notes.append("Your answer was very short — try to elaborate with examples.")
-    elif wc < 30:
-        length_score = 5.0
-        notes.append("Your answer could be more detailed.")
-    elif wc <= 200:
-        length_score = 9.0
-    elif wc <= 350:
-        length_score = 7.5
-        notes.append("Your answer was a bit long; try to be more concise.")
-    else:
-        length_score = 6.0
-        notes.append("Your answer was very long; aim for 1-2 minutes of speech.")
+    # ---- Length ---------------------------------------------------------
+    length_score, length_note = _length_score(wc)
+    if length_note:
+        notes.append(length_note)
+    components["length_score"] = length_score
 
-    # ---- Keyword coverage ----------------------------------------------
-    if expected_keywords:
-        text_lo = text.lower()
-        hits = sum(1 for kw in expected_keywords if kw.lower() in text_lo)
-        coverage = hits / max(1, len(expected_keywords))
-        keyword_score = round(coverage * 10, 2)
-        if coverage < 0.4:
-            notes.append(
-                f"You covered {hits}/{len(expected_keywords)} key concepts — "
-                "consider mentioning more relevant terms."
-            )
-    else:
-        keyword_score = 7.0  # no keywords known, neutral baseline
-
-    # ---- Fluency / fillers ---------------------------------------------
+    # ---- Filler / hedging ----------------------------------------------
     fillers = _filler_count(text)
-    fluency_score = max(2.0, 10.0 - fillers * 0.8)
+    hedges = _hedging_count(text)
+    components["filler_count"] = fillers
+    components["hedging_count"] = hedges
     if fillers >= 3:
         notes.append(f"Detected {fillers} filler words — try to slow down.")
 
-    # ---- Hedging / confidence -----------------------------------------
-    hedges = sum(text.lower().count(h) for h in HEDGING_WORDS)
+    # ---- Keyword coverage ---------------------------------------------
+    literal_cov = _literal_keyword_coverage(text, expected_keywords or [])
+    soft_cov = nlp_service.best_keyword_alignment(text, expected_keywords or [])
+    components["literal_keyword_coverage"] = round(literal_cov, 3)
+    if soft_cov is not None:
+        components["semantic_keyword_coverage"] = round(soft_cov, 3)
+
+    if expected_keywords:
+        # Combine literal + (if available) semantic coverage; semantic wins
+        # because it's more forgiving of paraphrasing.
+        coverage = soft_cov if soft_cov is not None else literal_cov
+        if coverage < 0.4:
+            notes.append(
+                f"You covered roughly {round(coverage*100)}% of the expected concepts "
+                "— consider mentioning more relevant terms."
+            )
+        keyword_score = round(coverage * 10, 2)
+    else:
+        keyword_score = 7.0  # neutral baseline if no keywords
+
+    # ---- Semantic similarity vs. reference ------------------------------
+    reference = sample_answer or question_text
+    sem_sim = nlp_service.semantic_similarity(text, reference) if reference else None
+    if sem_sim is not None:
+        components["semantic_similarity"] = round(sem_sim, 3)
+        if sample_answer and sem_sim < 0.30:
+            notes.append(
+                "Your answer is semantically distant from the model answer — "
+                "you may have misunderstood the question."
+            )
+    sem_score = sem_sim * 10 if sem_sim is not None else None
+
+    # ---- Readability ---------------------------------------------------
+    flesch = nlp_service.readability(text)
+    read_score = _readability_to_score(flesch)
+    if flesch is not None:
+        components["flesch_reading_ease"] = round(flesch, 1)
+
+    # ---- Vocabulary diversity ------------------------------------------
+    vocab = nlp_service.vocabulary_diversity(text)
+    components["vocabulary_diversity"] = round(vocab, 3)
+    vocab_score = round(min(10.0, vocab * 18 + 2.0), 2)
+
+    # ---- Compose 4 dimensions ------------------------------------------
+    if sem_score is not None:
+        # NLP available: 60% semantic, 30% keyword, 10% length
+        technical = 0.60 * sem_score + 0.30 * keyword_score + 0.10 * length_score
+    else:
+        # Fallback: 70% keyword, 30% length
+        technical = 0.70 * keyword_score + 0.30 * length_score
+
+    if read_score is not None:
+        # 50% length, 30% fluency, 20% readability
+        fluency_score = max(2.0, 10.0 - fillers * 0.8)
+        communication = 0.50 * length_score + 0.30 * fluency_score + 0.20 * read_score
+    else:
+        fluency_score = max(2.0, 10.0 - fillers * 0.8)
+        communication = 0.50 * length_score + 0.50 * fluency_score
+
     confidence = max(2.0, 10.0 - hedges * 0.6 - fillers * 0.4)
 
-    # ---- Compose dimensions --------------------------------------------
-    technical = round((keyword_score * 0.7 + length_score * 0.3), 2)
-    communication = round((length_score * 0.5 + fluency_score * 0.5), 2)
-    engagement = round(min(10.0, length_score * 0.6 + 4.0 if wc >= 30 else length_score), 2)
+    # Engagement: substance via length + vocab diversity
+    engagement = 0.50 * length_score + 0.50 * vocab_score
+    if wc < 30:
+        engagement = min(engagement, 5.0)
 
-    overall = round(
-        technical * 0.40 + communication * 0.25 + confidence * 0.20 + engagement * 0.15,
-        2,
+    overall = (
+        technical * 0.40 + communication * 0.25 + confidence * 0.20 + engagement * 0.15
     )
 
     return AnswerScore(
-        technical=technical,
-        communication=communication,
+        technical=round(technical, 2),
+        communication=round(communication, 2),
         confidence=round(confidence, 2),
-        engagement=engagement,
-        overall=overall,
+        engagement=round(engagement, 2),
+        overall=round(overall, 2),
         notes=notes,
+        components=components,
     )
 
 
