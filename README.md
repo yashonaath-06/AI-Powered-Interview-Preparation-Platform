@@ -94,9 +94,9 @@ This project is built in 20 phases. Tracked in detail in [`ARCHITECTURE.md`](ARC
 - [x] Phase 10 — Computer vision
 - [x] Phase 11 — Analytics dashboard
 - [x] Phase 12 — Admin panel
-- [ ] Phase 13 — Resume analyzer
-- [ ] Phase 14 — Tests
-- [ ] Phase 15 — Deployment
+- [x] Phase 13 — Resume analyzer
+- [x] Phase 14 — Tests
+- [x] Phase 15 — Deployment
 - [ ] Phase 16-20 — Docs, PPT, viva prep, resume bullets
 
 ---
