@@ -1,106 +1,172 @@
+<div align="center">
+
 # 🎯 AI-Powered Interview Preparation Platform
 
-> A full-stack, AI-powered mock interview platform that conducts realistic interviews, analyzes answers with NLP, reads facial emotion + body language with computer vision, and gives candidates personalized improvement reports.
+### *A 24/7 AI coach that conducts realistic mock interviews, analyses your voice and body language, and tells you exactly how to improve.*
 
 [![Next.js](https://img.shields.io/badge/Next.js-14-black?logo=nextdotjs)](https://nextjs.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.110-009688?logo=fastapi)](https://fastapi.tiangolo.com/)
 [![Python](https://img.shields.io/badge/Python-3.11-3776AB?logo=python)](https://www.python.org/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-336791?logo=postgresql)](https://www.postgresql.org/)
-[![Docker](https://img.shields.io/badge/Docker-ready-2496ED?logo=docker)](https://www.docker.com/)
-[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![Whisper](https://img.shields.io/badge/Whisper-tiny.en-purple)](https://github.com/SYSTRAN/faster-whisper)
+[![MediaPipe](https://img.shields.io/badge/MediaPipe-FaceMesh-green)](https://developers.google.com/mediapipe)
+[![Tests](https://img.shields.io/badge/tests-40%20passing-brightgreen)]()
+[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
+[**🌐 Live demo**](#) · [**🧪 How to test**](HOW_TO_TEST.md) · [**🏛️ Architecture**](ARCHITECTURE.md) · [**🚀 Deployment**](DEPLOYMENT.md) · [**📘 Project report**](docs/PROJECT_REPORT.md)
+
+</div>
 
 ---
 
-## ✨ Highlights
+## ✨ What it does
 
-- 🤖 **Dynamic AI Interviewer** — generates company- and role-specific questions (Google SDE, TCS HR, Amazon Behavioral, etc.)
-- 🎙️ **Speech-to-Text** — OpenAI Whisper transcribes spoken answers in real time
-- 🧠 **NLP Answer Evaluation** — semantic similarity, grammar, fluency, and confidence scoring
-- 👁️ **Computer Vision** — face detection, emotion recognition, eye-contact tracking, head-pose estimation
-- 📊 **Performance Dashboard** — beautiful charts, multi-session comparisons, growth analytics
-- 📄 **Resume Analyzer** — uploads PDF resume, extracts skills, matches them to the target role
-- 👨‍💼 **Admin Panel** — user management, question bank CRUD, platform analytics
-- 🔐 **Secure Auth** — JWT-based, bcrypt password hashing, role-based access
-- 🐳 **One-command setup** — `docker compose up`
+```
+📺 Sign in → pick "Google · Software Engineer · Mixed · 5 questions" → start
+🎙️ AI asks the question; browser reads it aloud  
+🎤 Speak the answer (Whisper transcribes)  
+📷 Webcam tracks face, eye contact, head pose, smile in real time  
+📊 After last question — beautiful animated report:
+       • overall 0-10 score
+       • 4 sub-scores (technical · communication · confidence · engagement)
+       • AI-written coach feedback paragraph  
+       • per-question accordion with sub-scores and tips
+📈 Performance dashboard tracks you across all sessions
+📄 Resume analyzer rates your PDF against a target role and suggests fixes
+🛠️ Admin panel manages users, questions, and platform stats
+```
 
----
+## 🧩 Modules
 
-## 🏗️ Tech Stack
+| # | Module | What it does |
+|---|---|---|
+| 🔐 | **Auth** | JWT + bcrypt; signup, login, /me, role-based gating |
+| 🤖 | **Interview Engine** | 67-question seed bank + Groq LLaMA-3 generation + session state machine |
+| 🎙️ | **Speech-to-Text** | OpenAI Whisper via `faster-whisper` runtime (CPU-only) |
+| 🧠 | **NLP Scorer** | sentence-transformers semantic similarity + keyword coverage + readability + filler/hedging penalty |
+| 👁️ | **Computer Vision** | MediaPipe FaceMesh (468 + 10 iris landmarks) → head pose, gaze, smile, engagement |
+| 📊 | **Analytics** | trend chart, radar, by-type bars, weakness bucketizer, session compare |
+| 📄 | **Resume Analyzer** | pypdf parsing + 100-skill taxonomy + role match + AI feedback |
+| 👨‍💼 | **Admin Panel** | user CRUD, question bank CRUD, platform stats, recent activity |
+
+## 🏗️ Tech stack
 
 | Layer | Technologies |
 |---|---|
-| Frontend | Next.js 14 · React 18 · TypeScript · Tailwind CSS · Framer Motion · shadcn/ui · Recharts · Zustand |
-| Backend | FastAPI · SQLAlchemy 2 · Alembic · Pydantic v2 · Uvicorn |
-| Database | PostgreSQL 16 (prod) · SQLite (dev) |
-| AI / ML | OpenAI Whisper · HuggingFace Transformers · sentence-transformers · MediaPipe · OpenCV · DeepFace · spaCy |
-| LLM | Groq (LLaMA-3) with curated JSON fallback |
-| Auth | JWT (python-jose) + bcrypt |
-| DevOps | Docker · docker-compose · Vercel · Render |
+| **Frontend** | Next.js 14 · React 18 · TypeScript · Tailwind CSS · Framer Motion · Recharts · TanStack Query · Zustand |
+| **Backend** | FastAPI · SQLAlchemy 2 · Pydantic v2 · python-jose · loguru |
+| **Database** | PostgreSQL 16 (prod) · SQLite (dev/tests) |
+| **AI / ML** | OpenAI Whisper (faster-whisper) · sentence-transformers (`all-MiniLM-L6-v2`) · MediaPipe FaceMesh · OpenCV · pypdf · textstat · Groq LLaMA-3 |
+| **DevOps** | Docker · docker-compose · GitHub Actions · Vercel · Render |
 
----
+## 🚀 Quickstart
 
-## 🚀 Quick Start
-
-> **Brand-new to coding?** Read [`SETUP_GUIDE.md`](SETUP_GUIDE.md) instead — it explains every single step assuming you have never installed anything before.
+> **Brand-new to coding?** Read [`SETUP_GUIDE.md`](SETUP_GUIDE.md) instead — it walks you through every install step.
+>
+> **Want to test what's already deployed?** Read [`HOW_TO_TEST.md`](HOW_TO_TEST.md) — 13 numbered steps with 🟢 expected results.
 
 ```bash
-# 1. clone
+# 1. Clone
 git clone https://github.com/yashonaath-06/AI-Powered-Interview-Preparation-Platform.git
 cd AI-Powered-Interview-Preparation-Platform
 
-# 2. create your env file from the template
+# 2. Configure
 cp .env.example .env
+# (edit .env: set JWT_SECRET to a random 32+ char string)
 
-# 3. start everything (DB + backend + frontend)
+# 3. Run everything
 docker compose up --build
 ```
 
-Open:
-- Frontend → http://localhost:3000
-- Backend API docs → http://localhost:8000/docs
+Then visit:
+- 🌐 **Frontend** → http://localhost:3000
+- 📖 **API docs** → http://localhost:8000/docs
 
-> 🧪 **Want to actually test it without Docker?** Read [`HOW_TO_TEST.md`](HOW_TO_TEST.md) — a 5-minute step-by-step walkthrough with expected results at every step.
-
----
-
-## 📁 Repository Structure
+## 📁 Repository tour
 
 ```
 .
-├── backend/        FastAPI server, AI services, DB models
-├── frontend/       Next.js website
-├── docker-compose.yml
-├── ARCHITECTURE.md detailed system design
-└── SETUP_GUIDE.md  zero-knowledge setup guide
+├── backend/              FastAPI server
+│   ├── app/
+│   │   ├── core/         security utils, FastAPI deps (get_current_user, require_admin)
+│   │   ├── models/       SQLAlchemy 2.0 typed models (User, Question, Session, Answer, Resume)
+│   │   ├── schemas/      Pydantic v2 request/response shapes
+│   │   ├── routers/      auth · users · interviews · questions · resume · analytics · admin · health
+│   │   ├── services/     auth · interview_engine · llm · nlp · scoring · speech · vision · resume · question
+│   │   ├── data/         curated question bank + skill taxonomy
+│   │   └── cli.py        admin bootstrap CLI
+│   ├── tests/            40 pytest tests
+│   ├── main.py           app factory + lifespan
+│   ├── requirements.txt  base deps
+│   ├── requirements-ml.txt   optional Whisper / NLP / vision deps
+│   └── Dockerfile
+│
+├── frontend/             Next.js 14 app
+│   ├── src/app/          14 routes (App Router)
+│   │   ├── (auth)/       login, signup
+│   │   ├── dashboard/    overview, interview, [id], [id]/report, analytics, resume
+│   │   └── admin/        overview, users, questions, sessions
+│   ├── src/components/   reusable UI + landing + interview + analytics + resume + admin
+│   ├── src/lib/          api, audio, webcam, utils
+│   ├── src/store/        Zustand auth store
+│   └── src/providers/    React-Query + toast
+│
+├── .github/workflows/    GitHub Actions CI
+├── docs/                 Project report · presentation outline · viva Q&A · resume bullets
+├── docker-compose.yml    one-command stack (db + backend + frontend)
+├── render.yaml           one-click Render Blueprint
+├── ARCHITECTURE.md       system design, schema, AI pipeline, deployment topology
+├── SETUP_GUIDE.md        zero-knowledge installer guide
+├── HOW_TO_TEST.md        13-step beginner walkthrough
+├── DEPLOYMENT.md         3 deployment paths
+└── README.md             you are here
 ```
 
-See [`ARCHITECTURE.md`](ARCHITECTURE.md) for diagrams and deep-dives.
+## 🧪 Testing
 
----
+```bash
+# 40 backend tests
+cd backend && pytest -v
 
-## 🛣️ Roadmap
+# Frontend type check + production build
+cd frontend && npm run type-check && npm run build
+```
 
-This project is built in 20 phases. Tracked in detail in [`ARCHITECTURE.md`](ARCHITECTURE.md).
+GitHub Actions runs both pipelines on every push/PR.
 
-- [x] Phase 1 — Architecture & tech selection
-- [x] Phase 2 — Folder structure & beginner setup guide
-- [x] Phase 3 — Frontend foundation
-- [x] Phase 4 — Backend foundation
-- [x] Phase 5 — Database & migrations
-- [x] Phase 6 — Authentication
-- [x] Phase 7 — AI interview engine
-- [x] Phase 8 — Speech-to-text (Whisper)
-- [x] Phase 9 — NLP evaluation
-- [x] Phase 10 — Computer vision
-- [x] Phase 11 — Analytics dashboard
-- [x] Phase 12 — Admin panel
-- [x] Phase 13 — Resume analyzer
-- [x] Phase 14 — Tests
-- [x] Phase 15 — Deployment
-- [ ] Phase 16-20 — Docs, PPT, viva prep, resume bullets
+## 🛠️ Build phases
 
----
+This project was built incrementally across **20 phases**, each landing as a focused PR you can read in chronological order:
+
+| Phase | Topic | Status |
+|---|---|---|
+| 1-2 | Architecture, folder structure, beginner setup guide | ✅ |
+| 3-6 | Frontend foundation, backend skeleton, DB models, JWT auth | ✅ |
+| 7 | AI interview engine | ✅ |
+| 8 | Whisper speech-to-text | ✅ |
+| 9 | NLP answer evaluation | ✅ |
+| 10 | Computer vision (face, eye, pose, smile) | ✅ |
+| 11 | Analytics dashboard | ✅ |
+| 12 | Admin panel | ✅ |
+| 13 | Resume analyzer | ✅ |
+| 14 | 40-test pytest suite + GitHub Actions CI | ✅ |
+| 15 | Render Blueprint + Vercel config + DEPLOYMENT guide | ✅ |
+| 16 | README polish | ✅ |
+| 17 | Technical project report | ✅ |
+| 18 | Presentation deck outline | ✅ |
+| 19 | Viva Q&A prep | ✅ |
+| 20 | Resume bullet points | ✅ |
 
 ## 📜 License
 
-MIT — see [LICENSE](LICENSE).
+MIT — see [`LICENSE`](LICENSE).
+
+---
+
+<div align="center">
+
+**Built for placements. Open-sourced for everyone.** ⭐
+
+[Open the docs](docs/) · [Run a mock interview](HOW_TO_TEST.md) · [Deploy in 3 minutes](DEPLOYMENT.md)
+
+</div>
