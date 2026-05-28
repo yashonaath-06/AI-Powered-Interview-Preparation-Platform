@@ -88,7 +88,7 @@ This project is built in 20 phases. Tracked in detail in [`ARCHITECTURE.md`](ARC
 - [x] Phase 6 — Authentication
 - [x] Phase 7 — AI interview engine
 - [x] Phase 8 — Speech-to-text (Whisper)
-- [ ] Phase 9 — NLP evaluation
+- [x] Phase 9 — NLP evaluation
 - [ ] Phase 10 — Computer vision
 - [ ] Phase 11 — Analytics dashboard
 - [ ] Phase 12 — Admin panel

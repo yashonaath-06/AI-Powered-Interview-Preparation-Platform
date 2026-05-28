@@ -109,11 +109,14 @@ created_at                                               created_at
 ### 4c. NLP Evaluation
 | Sub-score | Library | Method |
 |---|---|---|
-| Technical accuracy | `sentence-transformers` | cosine similarity vs. expected answer |
-| Grammar | `language_tool_python` | error count → score |
-| Fluency | regex + WPM | filler words + words/min |
-| Confidence | acoustic features + hedging words | composite |
-| Communication clarity | combination | weighted average |
+| Technical accuracy | `sentence-transformers` (Phase 9) | cosine similarity vs. expected/sample answer; soft semantic keyword coverage |
+| Communication clarity | `textstat` Flesch reading-ease + length sweetspot + fluency | composed |
+| Confidence | filler / hedging counts | composed |
+| Engagement | length + vocabulary diversity | composed |
+
+If `requirements-ml.txt` is not installed, the scorer falls back to literal
+keyword matching + length heuristics. The scorer signature stays the same;
+the engine code doesn't need to know which mode is active.
 
 ### 4d. Computer Vision Analysis
 | Signal | Library | What it measures |

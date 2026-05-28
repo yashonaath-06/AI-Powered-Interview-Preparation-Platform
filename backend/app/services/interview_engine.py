@@ -118,7 +118,12 @@ def submit_answer(
 
     # ---- Score the answer ------------------------------------------------
     expected_kw = _decode_keywords(question.expected_keywords)
-    result = score_answer(answer_text, expected_keywords=expected_kw)
+    result = score_answer(
+        answer_text,
+        expected_keywords=expected_kw,
+        sample_answer=question.sample_answer,
+        question_text=question.text,
+    )
 
     answer = Answer(
         session_id=session.id,
