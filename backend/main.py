@@ -30,6 +30,12 @@ async def lifespan(app: FastAPI):
     logger.info("🚀 Starting AI Interview Prep backend...")
     init_db()
     logger.info("✅ Database initialized.")
+    # Seed the question bank on first run (idempotent).
+    from app.seed import seed_question_bank
+    try:
+        seed_question_bank()
+    except Exception as exc:  # noqa: BLE001
+        logger.warning(f"Question-bank seeding failed: {exc}")
     yield
     logger.info("👋 Shutting down.")
 

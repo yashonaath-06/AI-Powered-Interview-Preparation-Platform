@@ -1,0 +1,250 @@
+{
+  "_about": "Curated interview question bank used as the primary source when no LLM key is configured, and as a fallback when LLM generation fails. Each entry: text, category (hr|technical|behavioral), difficulty (easy|medium|hard), optional company, optional role, expected_keywords (used by the baseline scorer in Phase 7 and the NLP scorer in Phase 9), optional sample_answer.",
+  "questions": [
+    { "text": "Tell me about yourself.", "category": "hr", "difficulty": "easy",
+      "expected_keywords": ["background", "education", "experience", "skills", "strengths", "passion"],
+      "sample_answer": "I am a final-year computer-science student with hands-on experience in full-stack development and machine learning. Over the last two years I have built three production-grade projects, interned at a startup, and led a team of four for our college tech-fest portal." },
+
+    { "text": "Why are you interested in this role?", "category": "hr", "difficulty": "easy",
+      "expected_keywords": ["role", "company", "passion", "skills", "growth", "fit"] },
+
+    { "text": "What are your greatest strengths and weaknesses?", "category": "hr", "difficulty": "easy",
+      "expected_keywords": ["strength", "weakness", "improve", "self-aware", "learning"] },
+
+    { "text": "Where do you see yourself in 5 years?", "category": "hr", "difficulty": "easy",
+      "expected_keywords": ["growth", "learning", "leadership", "career", "goals"] },
+
+    { "text": "Why should we hire you?", "category": "hr", "difficulty": "medium",
+      "expected_keywords": ["skills", "value", "experience", "passion", "team", "results"] },
+
+    { "text": "Why are you leaving your current job / college?", "category": "hr", "difficulty": "medium",
+      "expected_keywords": ["growth", "challenge", "opportunity", "career"] },
+
+    { "text": "What motivates you?", "category": "hr", "difficulty": "easy",
+      "expected_keywords": ["challenge", "impact", "learning", "growth", "team"] },
+
+    { "text": "How do you handle stress and pressure?", "category": "hr", "difficulty": "medium",
+      "expected_keywords": ["prioritize", "calm", "plan", "communication", "experience"] },
+
+    { "text": "Describe your ideal work environment.", "category": "hr", "difficulty": "easy",
+      "expected_keywords": ["collaborative", "learning", "feedback", "ownership"] },
+
+    { "text": "What are your salary expectations?", "category": "hr", "difficulty": "medium",
+      "expected_keywords": ["market", "experience", "value", "negotiable", "research"] },
+
+    { "text": "Tell me about a time you failed and what you learned from it.", "category": "behavioral", "difficulty": "medium",
+      "expected_keywords": ["failure", "learning", "ownership", "improvement", "STAR", "result"] },
+
+    { "text": "Tell me about a time you had a conflict with a teammate. How did you resolve it?", "category": "behavioral", "difficulty": "medium",
+      "expected_keywords": ["conflict", "communication", "listened", "compromise", "resolution"] },
+
+    { "text": "Describe a time when you had to learn a new technology quickly.", "category": "behavioral", "difficulty": "medium",
+      "expected_keywords": ["learning", "documentation", "practice", "delivered", "deadline"] },
+
+    { "text": "Tell me about a project you're most proud of.", "category": "behavioral", "difficulty": "easy",
+      "expected_keywords": ["project", "impact", "challenge", "team", "outcome", "result"] },
+
+    { "text": "Describe a situation where you took initiative without being asked.", "category": "behavioral", "difficulty": "medium",
+      "expected_keywords": ["initiative", "ownership", "improvement", "outcome", "leadership"] },
+
+    { "text": "Tell me about a time you had to meet a tight deadline.", "category": "behavioral", "difficulty": "medium",
+      "expected_keywords": ["deadline", "prioritize", "plan", "team", "delivered"] },
+
+    { "text": "Describe a time you persuaded someone to change their mind.", "category": "behavioral", "difficulty": "hard",
+      "expected_keywords": ["data", "empathy", "communication", "outcome", "convinced"] },
+
+    { "text": "Tell me about a time you received critical feedback. How did you handle it?", "category": "behavioral", "difficulty": "medium",
+      "expected_keywords": ["feedback", "listened", "improved", "growth", "ownership"] },
+
+    { "text": "Describe a time you had to make a decision without all the information you needed.", "category": "behavioral", "difficulty": "hard",
+      "expected_keywords": ["decision", "tradeoff", "risk", "judgement", "outcome"] },
+
+    { "text": "Walk me through a time you mentored or helped a colleague.", "category": "behavioral", "difficulty": "easy",
+      "expected_keywords": ["mentor", "patience", "teaching", "growth", "team"] },
+
+    { "text": "Explain the difference between an array and a linked list. When would you use each?", "category": "technical", "difficulty": "easy",
+      "role": "Software Engineer",
+      "expected_keywords": ["contiguous", "pointer", "O(1)", "O(n)", "insertion", "random access", "memory"] },
+
+    { "text": "What is the time complexity of common operations on a HashMap, and why?", "category": "technical", "difficulty": "easy",
+      "role": "Software Engineer",
+      "expected_keywords": ["hash", "O(1)", "collision", "bucket", "amortized", "rehash"] },
+
+    { "text": "Reverse a linked list iteratively. Walk me through your approach and edge cases.", "category": "technical", "difficulty": "medium",
+      "role": "Software Engineer",
+      "expected_keywords": ["pointer", "previous", "current", "next", "null", "in-place"] },
+
+    { "text": "What is dynamic programming? Give an example problem and how you'd identify it.", "category": "technical", "difficulty": "medium",
+      "role": "Software Engineer",
+      "expected_keywords": ["overlapping subproblems", "optimal substructure", "memoization", "tabulation", "fibonacci", "knapsack"] },
+
+    { "text": "Explain how a binary search works and its time complexity.", "category": "technical", "difficulty": "easy",
+      "role": "Software Engineer",
+      "expected_keywords": ["sorted", "midpoint", "log n", "divide and conquer", "left", "right"] },
+
+    { "text": "Design a URL shortener like bit.ly. Walk me through the high-level architecture.", "category": "technical", "difficulty": "hard",
+      "role": "Software Engineer",
+      "expected_keywords": ["hash", "base62", "database", "cache", "redirect", "scaling", "collision", "key generation"] },
+
+    { "text": "What is the difference between SQL and NoSQL? When would you choose each?", "category": "technical", "difficulty": "medium",
+      "role": "Software Engineer",
+      "expected_keywords": ["relational", "schema", "ACID", "BASE", "scalability", "joins", "document", "key-value"] },
+
+    { "text": "Explain the React component lifecycle and the role of useEffect.", "category": "technical", "difficulty": "medium",
+      "role": "Frontend Developer",
+      "expected_keywords": ["mount", "unmount", "render", "side effect", "dependency array", "cleanup"] },
+
+    { "text": "What is the virtual DOM, and why does React use one?", "category": "technical", "difficulty": "easy",
+      "role": "Frontend Developer",
+      "expected_keywords": ["diffing", "reconciliation", "performance", "tree", "real DOM"] },
+
+    { "text": "Explain CSS specificity and the box model.", "category": "technical", "difficulty": "easy",
+      "role": "Frontend Developer",
+      "expected_keywords": ["inline", "id", "class", "element", "padding", "border", "margin", "content"] },
+
+    { "text": "How would you optimize the load time of a slow webpage?", "category": "technical", "difficulty": "medium",
+      "role": "Frontend Developer",
+      "expected_keywords": ["bundle", "code splitting", "lazy", "image", "cache", "CDN", "lighthouse", "render-blocking"] },
+
+    { "text": "Design a REST API for a blogging platform. What endpoints would you create?", "category": "technical", "difficulty": "medium",
+      "role": "Backend Developer",
+      "expected_keywords": ["GET", "POST", "PUT", "DELETE", "resource", "REST", "auth", "pagination"] },
+
+    { "text": "Explain the differences between HTTP and HTTPS, and what TLS does.", "category": "technical", "difficulty": "easy",
+      "role": "Backend Developer",
+      "expected_keywords": ["encryption", "certificate", "handshake", "public key", "integrity"] },
+
+    { "text": "What is the CAP theorem? Give an example of a system that prioritizes each pair.", "category": "technical", "difficulty": "hard",
+      "role": "Backend Developer",
+      "expected_keywords": ["consistency", "availability", "partition", "tradeoff", "DynamoDB", "MongoDB", "PostgreSQL"] },
+
+    { "text": "Explain bias-variance tradeoff in machine learning.", "category": "technical", "difficulty": "medium",
+      "role": "Machine Learning Engineer",
+      "expected_keywords": ["bias", "variance", "underfitting", "overfitting", "complexity", "generalization"] },
+
+    { "text": "What is the difference between supervised, unsupervised, and reinforcement learning?", "category": "technical", "difficulty": "easy",
+      "role": "Machine Learning Engineer",
+      "expected_keywords": ["labeled", "unlabeled", "reward", "regression", "classification", "clustering"] },
+
+    { "text": "Explain how a random forest works and why it's often better than a single decision tree.", "category": "technical", "difficulty": "medium",
+      "role": "Machine Learning Engineer",
+      "expected_keywords": ["ensemble", "bagging", "decision tree", "variance", "vote", "feature subset"] },
+
+    { "text": "What is gradient descent? Explain the difference between batch, stochastic, and mini-batch.", "category": "technical", "difficulty": "medium",
+      "role": "Machine Learning Engineer",
+      "expected_keywords": ["learning rate", "loss", "gradient", "batch", "stochastic", "mini-batch", "convergence"] },
+
+    { "text": "Walk me through how a transformer model works at a high level.", "category": "technical", "difficulty": "hard",
+      "role": "Machine Learning Engineer",
+      "expected_keywords": ["attention", "self-attention", "encoder", "decoder", "embedding", "positional", "softmax"] },
+
+    { "text": "Explain the difference between INNER JOIN, LEFT JOIN, and FULL OUTER JOIN with an example.", "category": "technical", "difficulty": "easy",
+      "role": "Data Analyst",
+      "expected_keywords": ["join", "match", "null", "table", "key"] },
+
+    { "text": "How would you investigate a sudden drop in daily active users?", "category": "technical", "difficulty": "medium",
+      "role": "Data Analyst",
+      "expected_keywords": ["funnel", "cohort", "segmentation", "metric", "hypothesis", "data", "release"] },
+
+    { "text": "What is the difference between correlation and causation? Give an example.", "category": "technical", "difficulty": "easy",
+      "role": "Data Analyst",
+      "expected_keywords": ["correlation", "causation", "confounding", "experiment", "spurious"] },
+
+    { "text": "Explain p-values and what statistical significance means.", "category": "technical", "difficulty": "medium",
+      "role": "Data Analyst",
+      "expected_keywords": ["p-value", "null hypothesis", "significance", "alpha", "test"] },
+
+    { "text": "Why do you want to work at Google specifically?", "category": "hr", "difficulty": "easy",
+      "company": "Google",
+      "expected_keywords": ["mission", "scale", "users", "innovation", "products", "culture"] },
+
+    { "text": "Google's mission is to organize the world's information. How would you contribute to that?", "category": "behavioral", "difficulty": "medium",
+      "company": "Google",
+      "expected_keywords": ["mission", "users", "data", "search", "information", "impact"] },
+
+    { "text": "Design YouTube's recommendation system. Walk me through your high-level approach.", "category": "technical", "difficulty": "hard",
+      "company": "Google",
+      "role": "Software Engineer",
+      "expected_keywords": ["candidate generation", "ranking", "embeddings", "watch history", "collaborative filtering", "neural network", "AB test"] },
+
+    { "text": "Tell me about a time you had to deliver a project under extreme ambiguity. (Amazon: Dive Deep / Bias for Action)", "category": "behavioral", "difficulty": "hard",
+      "company": "Amazon",
+      "expected_keywords": ["leadership principle", "ambiguity", "decision", "data", "ownership", "result"] },
+
+    { "text": "What is one of Amazon's leadership principles you most identify with, and why?", "category": "hr", "difficulty": "easy",
+      "company": "Amazon",
+      "expected_keywords": ["leadership principle", "customer obsession", "ownership", "deliver results", "example"] },
+
+    { "text": "Design Amazon's shopping cart for high availability. What are the trade-offs?", "category": "technical", "difficulty": "hard",
+      "company": "Amazon",
+      "role": "Software Engineer",
+      "expected_keywords": ["distributed", "consistency", "availability", "DynamoDB", "session", "replication", "eventual", "scale"] },
+
+    { "text": "Why do you want to work at Microsoft, and which product excites you?", "category": "hr", "difficulty": "easy",
+      "company": "Microsoft",
+      "expected_keywords": ["mission", "Azure", "Office", "AI", "growth mindset", "impact"] },
+
+    { "text": "Describe a time you exhibited a growth mindset, in the spirit of Microsoft's culture.", "category": "behavioral", "difficulty": "medium",
+      "company": "Microsoft",
+      "expected_keywords": ["growth mindset", "learning", "feedback", "improvement", "challenge"] },
+
+    { "text": "Why do you want to join TCS, and what makes it different from other IT services companies?", "category": "hr", "difficulty": "easy",
+      "company": "TCS",
+      "expected_keywords": ["TCS", "values", "global", "training", "stability", "exposure", "clients"] },
+
+    { "text": "What is your familiarity with software development life cycle (SDLC)?", "category": "technical", "difficulty": "easy",
+      "company": "TCS",
+      "expected_keywords": ["requirements", "design", "implementation", "testing", "deployment", "maintenance", "Agile", "Waterfall"] },
+
+    { "text": "Are you willing to relocate, work in shifts, and learn any technology assigned to your project?", "category": "hr", "difficulty": "easy",
+      "company": "TCS",
+      "expected_keywords": ["flexibility", "willing", "adaptable", "open", "learning"] },
+
+    { "text": "Why do you want to work at Infosys, and what is the Infosys 3.0 vision?", "category": "hr", "difficulty": "easy",
+      "company": "Infosys",
+      "expected_keywords": ["Infosys", "values", "digital", "innovation", "training", "Mysore"] },
+
+    { "text": "Explain object-oriented programming and its four pillars.", "category": "technical", "difficulty": "easy",
+      "company": "Infosys",
+      "expected_keywords": ["encapsulation", "inheritance", "polymorphism", "abstraction", "class", "object"] },
+
+    { "text": "Why do you want to work at Wipro, and what do you know about our recent initiatives?", "category": "hr", "difficulty": "easy",
+      "company": "Wipro",
+      "expected_keywords": ["Wipro", "values", "consulting", "technology", "growth"] },
+
+    { "text": "Tell me about a project you delivered end to end and what tradeoffs you made.", "category": "behavioral", "difficulty": "medium",
+      "expected_keywords": ["scope", "timeline", "tech stack", "tradeoff", "result", "users"] },
+
+    { "text": "How would you explain a database index to a non-technical person?", "category": "technical", "difficulty": "easy",
+      "expected_keywords": ["index", "lookup", "book", "tradeoff", "speed", "storage", "write"] },
+
+    { "text": "What is the difference between processes and threads?", "category": "technical", "difficulty": "easy",
+      "role": "Software Engineer",
+      "expected_keywords": ["memory", "isolation", "context switch", "thread", "process", "shared", "concurrency"] },
+
+    { "text": "Explain how garbage collection works in a language you've used.", "category": "technical", "difficulty": "medium",
+      "role": "Software Engineer",
+      "expected_keywords": ["heap", "reference", "reachable", "mark and sweep", "generational"] },
+
+    { "text": "What is the difference between TCP and UDP? Give a use case for each.", "category": "technical", "difficulty": "easy",
+      "expected_keywords": ["reliable", "connectionless", "ordered", "TCP", "UDP", "video", "streaming", "handshake"] },
+
+    { "text": "Explain how DNS resolution works when you type a URL into a browser.", "category": "technical", "difficulty": "medium",
+      "expected_keywords": ["DNS", "recursive", "root", "TLD", "authoritative", "cache", "IP"] },
+
+    { "text": "What are SOLID principles in software design?", "category": "technical", "difficulty": "medium",
+      "role": "Software Engineer",
+      "expected_keywords": ["single responsibility", "open closed", "liskov", "interface segregation", "dependency inversion"] },
+
+    { "text": "Describe the steps you'd take to debug a production issue you can't reproduce locally.", "category": "behavioral", "difficulty": "hard",
+      "role": "Software Engineer",
+      "expected_keywords": ["logs", "metrics", "reproduce", "hypothesis", "rollback", "alerting", "stakeholders"] },
+
+    { "text": "What is a deadlock and how would you prevent one?", "category": "technical", "difficulty": "medium",
+      "role": "Software Engineer",
+      "expected_keywords": ["mutual exclusion", "hold and wait", "circular wait", "no preemption", "lock ordering"] },
+
+    { "text": "Explain how you'd approach designing a system to handle 1 million concurrent users.", "category": "technical", "difficulty": "hard",
+      "expected_keywords": ["load balancer", "horizontal scaling", "cache", "database sharding", "queue", "CDN", "stateless"] }
+  ]
+}
