@@ -130,6 +130,7 @@ def score_answer(
     *,
     sample_answer: str | None = None,
     question_text: str | None = None,
+    vision_summary: dict | None = None,
 ) -> AnswerScore:
     """
     Score one answer along 4 dimensions.
@@ -142,6 +143,9 @@ def score_answer(
         already ships these for many questions)
     question_text : the question itself; used as a fallback semantic
         reference when no sample_answer is available
+    vision_summary : optional Phase-10 aggregate of webcam frame metrics
+        (face_present_pct, eye_contact_pct, engagement_score, …). When
+        present the engagement and confidence sub-scores fold it in.
     """
     text = (answer_text or "").strip()
     notes: list[str] = []
@@ -232,6 +236,26 @@ def score_answer(
     engagement = 0.50 * length_score + 0.50 * vocab_score
     if wc < 30:
         engagement = min(engagement, 5.0)
+
+    # ---- Vision blending (Phase 10) ------------------------------------
+    if vision_summary and vision_summary.get("sample_count", 0) > 0:
+        vision_engagement = vision_summary.get("engagement_score")
+        if isinstance(vision_engagement, (int, float)):
+            # 60% lexical engagement, 40% camera-derived engagement
+            engagement = 0.60 * engagement + 0.40 * float(vision_engagement)
+            components["vision_engagement"] = round(float(vision_engagement), 2)
+
+        boost = vision_summary.get("confidence_boost")
+        if isinstance(boost, (int, float)):
+            # Multiplier: maintaining good eye contact lifts confidence up to +30%
+            multiplier = 1.0 + (float(boost) - 0.5) * 0.6
+            confidence = max(1.0, min(10.0, confidence * multiplier))
+            components["vision_confidence_boost"] = round(float(boost), 3)
+
+        for n in vision_summary.get("notes", []) or []:
+            notes.append(n)
+        components["vision_face_present_pct"] = vision_summary.get("face_present_pct")
+        components["vision_eye_contact_pct"] = vision_summary.get("eye_contact_pct")
 
     overall = (
         technical * 0.40 + communication * 0.25 + confidence * 0.20 + engagement * 0.15

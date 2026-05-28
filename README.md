@@ -59,6 +59,8 @@ Open:
 - Frontend → http://localhost:3000
 - Backend API docs → http://localhost:8000/docs
 
+> 🧪 **Want to actually test it without Docker?** Read [`HOW_TO_TEST.md`](HOW_TO_TEST.md) — a 5-minute step-by-step walkthrough with expected results at every step.
+
 ---
 
 ## 📁 Repository Structure
@@ -89,7 +91,7 @@ This project is built in 20 phases. Tracked in detail in [`ARCHITECTURE.md`](ARC
 - [x] Phase 7 — AI interview engine
 - [x] Phase 8 — Speech-to-text (Whisper)
 - [x] Phase 9 — NLP evaluation
-- [ ] Phase 10 — Computer vision
+- [x] Phase 10 — Computer vision
 - [ ] Phase 11 — Analytics dashboard
 - [ ] Phase 12 — Admin panel
 - [ ] Phase 13 — Resume analyzer

@@ -1,5 +1,5 @@
 """
-/api/interviews — full interview lifecycle (Phase 7).
+/api/interviews — full interview lifecycle (Phases 7-10).
 
 Endpoints
 ---------
@@ -9,10 +9,12 @@ GET    /api/interviews/{id}               session + progress
 GET    /api/interviews/{id}/next          current/next question
 POST   /api/interviews/{id}/answer        submit answer (text)
 POST   /api/interviews/{id}/answer/audio  submit spoken answer (Phase 8)
+POST   /api/interviews/{id}/vision/frame  per-frame webcam analysis (Phase 10)
+POST   /api/interviews/{id}/vision/aggregate  aggregate frame metrics (Phase 10)
 POST   /api/interviews/{id}/complete      finalize + score
 GET    /api/interviews/{id}/report        full report (after complete)
 """
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
 from sqlalchemy import desc, select
 from sqlalchemy.orm import Session
 
@@ -31,7 +33,8 @@ from app.schemas.interview import (
     SubmitAnswerRequest,
     SubmitAnswerResponse,
 )
-from app.services import interview_engine, speech_service
+from app.schemas.vision import FrameMetricsOut, VisionSummaryIn
+from app.services import interview_engine, speech_service, vision_service
 
 router = APIRouter()
 
@@ -149,6 +152,7 @@ def submit_answer(
         session_id=session_id,
         answer_text=payload.answer_text,
         duration_seconds=payload.duration_seconds,
+        vision_summary=payload.vision_summary,
     )
 
     # Determine progress
@@ -177,6 +181,7 @@ def submit_answer(
 async def submit_audio_answer(
     session_id: int,
     audio: UploadFile = File(..., description="Audio blob (webm/ogg/wav/mp3)"),
+    vision_summary: str | None = Form(default=None, description="Optional JSON string of aggregated vision metrics"),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -197,12 +202,20 @@ async def submit_audio_answer(
             detail="Empty audio upload.",
         )
 
-    # Soft cap: 15MB ≈ ~10 min of opus-encoded mono speech
     if len(raw) > 15 * 1024 * 1024:
         raise HTTPException(
             status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
             detail="Audio file is too large (limit: 15 MB).",
         )
+
+    # Parse optional vision summary
+    import json
+    parsed_vision: dict | None = None
+    if vision_summary:
+        try:
+            parsed_vision = json.loads(vision_summary)
+        except json.JSONDecodeError:
+            parsed_vision = None
 
     # ---- 1. Transcribe ----
     ext = "webm"
@@ -232,6 +245,7 @@ async def submit_audio_answer(
         session_id=session_id,
         answer_text=result.transcript,
         duration_seconds=result.duration_seconds,
+        vision_summary=parsed_vision,
     )
 
     p = interview_engine.get_session_with_progress(
@@ -251,7 +265,67 @@ async def submit_audio_answer(
     )
 
 
-# ---------- complete --------------------------------------------------------
+# ---------- vision (Phase 10) -----------------------------------------------
+
+@router.post(
+    "/{session_id}/vision/frame",
+    response_model=FrameMetricsOut,
+    summary="Analyze a single webcam frame with MediaPipe FaceMesh",
+)
+async def analyze_vision_frame(
+    session_id: int,
+    image: UploadFile = File(..., description="JPEG or PNG webcam frame"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    if not vision_service.is_available():
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=(
+                "Computer-vision is not enabled on this server. Install "
+                "requirements-ml.txt (mediapipe + opencv + Pillow) to enable "
+                "webcam analysis."
+            ),
+        )
+
+    # Verify ownership of the session
+    sess = db.get(InterviewSession, session_id)
+    if sess is None or sess.user_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Session not found.")
+
+    raw = await image.read()
+    if not raw:
+        raise HTTPException(status_code=400, detail="Empty frame upload.")
+    if len(raw) > 5 * 1024 * 1024:
+        raise HTTPException(status_code=413, detail="Frame too large (limit 5 MB).")
+
+    try:
+        metrics = vision_service.analyze_frame(raw)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+
+    return FrameMetricsOut.model_validate(metrics.to_dict())
+
+
+@router.post(
+    "/{session_id}/vision/aggregate",
+    response_model=VisionSummaryIn,
+    summary="Aggregate a list of per-frame metrics into a session summary",
+)
+def aggregate_vision_metrics(
+    session_id: int,
+    frames: list[FrameMetricsOut],
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Pure utility: takes the per-frame metrics the frontend has been
+    receiving and returns the aggregate the answer endpoint expects."""
+    sess = db.get(InterviewSession, session_id)
+    if sess is None or sess.user_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Session not found.")
+
+    summary = vision_service.aggregate_frames([f.model_dump() for f in frames])
+    return VisionSummaryIn(**summary)
 
 @router.post(
     "/{session_id}/complete",

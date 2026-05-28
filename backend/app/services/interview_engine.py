@@ -85,6 +85,7 @@ def submit_answer(
     session_id: int,
     answer_text: str,
     duration_seconds: float | None = None,
+    vision_summary: dict | None = None,
 ) -> tuple[Answer, Question | None]:
     session = _load_owned_session(db, user=user, session_id=session_id)
     if session.status != "in_progress":
@@ -123,6 +124,7 @@ def submit_answer(
         expected_keywords=expected_kw,
         sample_answer=question.sample_answer,
         question_text=question.text,
+        vision_summary=vision_summary,
     )
 
     answer = Answer(
@@ -131,6 +133,7 @@ def submit_answer(
         transcript=answer_text,
         duration_seconds=duration_seconds,
         nlp_scores=json.dumps(result.to_dict()),
+        vision_scores=json.dumps(vision_summary) if vision_summary else None,
         combined_score=result.overall,
     )
     db.add(answer)
