@@ -82,12 +82,12 @@ This project is built in 20 phases. Tracked in detail in [`ARCHITECTURE.md`](ARC
 
 - [x] Phase 1 — Architecture & tech selection
 - [x] Phase 2 — Folder structure & beginner setup guide
-- [ ] Phase 3 — Frontend foundation
-- [ ] Phase 4 — Backend foundation
-- [ ] Phase 5 — Database & migrations
-- [ ] Phase 6 — Authentication
-- [ ] Phase 7 — AI interview engine
-- [ ] Phase 8 — Speech-to-text
+- [x] Phase 3 — Frontend foundation
+- [x] Phase 4 — Backend foundation
+- [x] Phase 5 — Database & migrations
+- [x] Phase 6 — Authentication
+- [x] Phase 7 — AI interview engine
+- [x] Phase 8 — Speech-to-text (Whisper)
 - [ ] Phase 9 — NLP evaluation
 - [ ] Phase 10 — Computer vision
 - [ ] Phase 11 — Analytics dashboard

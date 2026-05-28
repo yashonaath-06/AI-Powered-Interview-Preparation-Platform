@@ -182,3 +182,38 @@ You're set up! From here:
 3. Each phase comes as its own pull-request on GitHub — review and merge it.
 
 Welcome to your final-year project. 🚀
+
+---
+
+## 9. Optional: enable real Whisper speech-to-text (Phase 8+)
+
+The platform works in **text mode** out of the box. If you want to **speak**
+your answers, follow these one-time extra steps:
+
+### With Docker
+The Docker image already installs everything (ffmpeg + faster-whisper).
+You're done.
+
+### Manual mode (Section 6)
+
+```bash
+cd backend
+source .venv/bin/activate          # Windows: .\.venv\Scripts\Activate.ps1
+pip install -r requirements-ml.txt
+```
+
+You'll also need **ffmpeg** installed system-wide:
+
+| OS | Command |
+|---|---|
+| macOS | `brew install ffmpeg` |
+| Ubuntu/Debian | `sudo apt install ffmpeg` |
+| Windows | Download from https://ffmpeg.org/download.html and add it to PATH |
+
+Restart the backend. The first time you record an answer, the server will
+download a ~75 MB Whisper model (only happens once). After that, recording
+your answer with the 🎙️ button works.
+
+### Browser permissions
+- Click the 🔒 icon next to the URL → **Allow** microphone.
+- HTTP localhost works; if you deploy publicly, you must use HTTPS for the mic.

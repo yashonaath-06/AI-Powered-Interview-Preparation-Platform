@@ -28,6 +28,7 @@ class Settings(BaseSettings):
     groq_api_key: str | None = None
     openai_api_key: str | None = None
     huggingface_token: str | None = None
+    whisper_model: str = "tiny.en"  # tiny.en | base.en | small.en | medium.en
 
     model_config = SettingsConfigDict(
         env_file=".env",

@@ -1,0 +1,28 @@
+# ============================================================
+#  OPTIONAL "heavy" ML dependencies.
+#
+#  These power the real Whisper (Phase 8), real NLP scorer
+#  (Phase 9), and real computer-vision (Phase 10) features.
+#
+#  The platform RUNS WITHOUT these — every AI service
+#  detects them at import time and falls back gracefully.
+#
+#  Install with:
+#      pip install -r requirements.txt -r requirements-ml.txt
+#  Or, with Docker, the ML profile already includes them.
+# ============================================================
+
+# ---- Phase 8: Whisper speech-to-text ----
+faster-whisper>=1.0.3
+numpy<2.0
+ctranslate2>=4.0.0,<5.0.0
+
+# ---- Phase 9: NLP scorer  (added in PR #5) ----
+# sentence-transformers>=2.7.0
+# language-tool-python>=2.8.0
+# torch>=2.2.0  # CPU build; Linux/macOS specific wheels recommended
+
+# ---- Phase 10: Computer vision  (added in PR #6) ----
+# mediapipe>=0.10.14
+# opencv-python-headless>=4.10.0
+# Pillow>=10.0
