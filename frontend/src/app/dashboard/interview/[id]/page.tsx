@@ -1,20 +1,24 @@
 "use client";
 /**
- * Live interview session — Phase 7 baseline.
+ * Live interview session — Phase 8 (voice-first).
  *
- * Webcam capture and real audio recording are wired up in Phases 8-10.
- * For now the candidate types their answer; the engine still scores it
- * with the baseline scorer (which Phase 9 will replace).
+ * Default: candidate records their answer with the mic; Whisper transcribes
+ * server-side. Users can switch to typing if their browser doesn't support
+ * MediaRecorder, or if they prefer.
+ *
+ * Phase 10 will add the live webcam panel + per-frame vision metrics.
  */
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-import { Volume2, ChevronRight, Flag } from "lucide-react";
+import { Volume2, ChevronRight, Flag, Pencil, Mic } from "lucide-react";
 import toast from "react-hot-toast";
 
 import { api } from "@/lib/api";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { RecordingControls } from "@/components/interview/RecordingControls";
+import { AudioRecorder } from "@/lib/audio";
 
 interface Question {
   id: number;
@@ -36,14 +40,21 @@ interface Progress {
   current_question: Question | null;
 }
 
+type Mode = "voice" | "text";
+
 export default function InterviewSessionPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
   const sessionId = Number(params.id);
 
+  // Default to voice if browser supports it, otherwise text.
+  const [mode, setMode] = useState<Mode>(() =>
+    AudioRecorder.isSupported() ? "voice" : "text",
+  );
   const [answer, setAnswer] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [completing, setCompleting] = useState(false);
+  const [lastTranscript, setLastTranscript] = useState<string | null>(null);
   const startedAt = useRef<number>(Date.now());
 
   const progress = useQuery<Progress>({
@@ -53,13 +64,14 @@ export default function InterviewSessionPage() {
     refetchOnWindowFocus: false,
   });
 
-  // Reset timer + clear textarea when a new question loads
+  // Reset state when a new question loads
   useEffect(() => {
     setAnswer("");
+    setLastTranscript(null);
     startedAt.current = Date.now();
   }, [progress.data?.current_question?.id]);
 
-  // Auto-redirect to report once the session is complete
+  // Auto-redirect to report once session completes
   useEffect(() => {
     if (progress.data?.session.status === "completed") {
       router.replace(`/dashboard/interview/${sessionId}/report`);
@@ -75,7 +87,18 @@ export default function InterviewSessionPage() {
     window.speechSynthesis.speak(u);
   };
 
-  const submit = async () => {
+  const handleAnswerSuccess = async (resp: any) => {
+    const overall = resp?.scores?.overall;
+    toast.success(`Scored: ${overall ?? "—"}/10`);
+    if (resp?.transcript) setLastTranscript(resp.transcript);
+    if (resp.finished) {
+      await complete();
+    } else {
+      await progress.refetch();
+    }
+  };
+
+  const submitText = async () => {
     if (!answer.trim()) {
       toast.error("Please type your answer first.");
       return;
@@ -87,16 +110,30 @@ export default function InterviewSessionPage() {
         answer_text: answer,
         duration_seconds: duration,
       });
-      // Show the score for the just-submitted answer
-      const overall = data.scores?.overall;
-      toast.success(`Answer scored: ${overall ?? "—"}/10`);
-      if (data.finished) {
-        await complete();
-      } else {
-        await progress.refetch();
-      }
+      await handleAnswerSuccess(data);
     } catch (err: any) {
       toast.error(err?.response?.data?.detail || "Failed to submit answer");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const submitAudio = async (blob: Blob, ext: string) => {
+    setSubmitting(true);
+    try {
+      const fd = new FormData();
+      fd.append("audio", blob, `answer.${ext}`);
+      const { data } = await api.post(
+        `/api/interviews/${sessionId}/answer/audio`,
+        fd,
+        { headers: { "Content-Type": "multipart/form-data" } },
+      );
+      await handleAnswerSuccess(data);
+    } catch (err: any) {
+      const detail = err?.response?.data?.detail || "Failed to upload answer";
+      toast.error(detail);
+      // If STT is unavailable, hint the user to switch to text mode
+      if (err?.response?.status === 503) setMode("text");
     } finally {
       setSubmitting(false);
     }
@@ -119,10 +156,7 @@ export default function InterviewSessionPage() {
   const answeredCount = data?.answered_count ?? 0;
   const total = data?.total_questions ?? 0;
   const isLast = answeredCount + 1 >= total;
-  const progressPct = useMemo(() => {
-    if (!total) return 0;
-    return Math.round((answeredCount / total) * 100);
-  }, [answeredCount, total]);
+  const progressPct = useMemo(() => (total ? (answeredCount / total) * 100 : 0), [answeredCount, total]);
 
   if (progress.isLoading) {
     return (
@@ -131,7 +165,6 @@ export default function InterviewSessionPage() {
       </div>
     );
   }
-
   if (progress.isError || !data) {
     return (
       <div className="min-h-[60vh] flex items-center justify-center text-slate-500">
@@ -164,7 +197,6 @@ export default function InterviewSessionPage() {
         </Button>
       </header>
 
-      {/* Progress bar */}
       <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden mb-8">
         <div
           className="h-full bg-brand-500 transition-all duration-500"
@@ -192,24 +224,65 @@ export default function InterviewSessionPage() {
         </Card>
       )}
 
-      {/* Answer textarea */}
-      {q && (
-        <div className="mt-6">
-          <label className="block text-sm font-medium text-slate-700 mb-2">
-            Your answer
-          </label>
+      {/* Mode toggle */}
+      {q && AudioRecorder.isSupported() && (
+        <div className="flex items-center gap-2 mt-6 mb-3 text-sm">
+          <span className="text-slate-500 mr-2">Answer mode:</span>
+          <button
+            onClick={() => setMode("voice")}
+            className={`px-3 py-1.5 rounded-lg border ${mode === "voice" ? "border-brand-500 bg-brand-50 text-brand-700" : "border-slate-200 text-slate-600 hover:border-slate-300"}`}
+          >
+            <Mic size={14} className="inline -mt-0.5 mr-1" /> Voice
+          </button>
+          <button
+            onClick={() => setMode("text")}
+            className={`px-3 py-1.5 rounded-lg border ${mode === "text" ? "border-brand-500 bg-brand-50 text-brand-700" : "border-slate-200 text-slate-600 hover:border-slate-300"}`}
+          >
+            <Pencil size={14} className="inline -mt-0.5 mr-1" /> Text
+          </button>
+          <span className="ml-auto text-xs text-slate-400">
+            {isLast ? "Last question" : `${total - answeredCount - 1} more after this`}
+          </span>
+        </div>
+      )}
+
+      {/* Voice mode */}
+      {q && mode === "voice" && (
+        <div className="mt-3 space-y-3">
+          <RecordingControls
+            disabled={submitting || completing}
+            onComplete={(blob, ext) => submitAudio(blob, ext)}
+          />
+          {lastTranscript && (
+            <Card className="bg-slate-50 border-slate-200">
+              <p className="text-xs uppercase tracking-widest text-slate-500 mb-1">
+                Last transcript
+              </p>
+              <p className="text-sm text-slate-700">{lastTranscript}</p>
+            </Card>
+          )}
+          <p className="text-xs text-slate-400">
+            🛡️ Your audio is processed by an open-source Whisper model running on the
+            backend; nothing is sent to third parties.
+          </p>
+        </div>
+      )}
+
+      {/* Text mode */}
+      {q && mode === "text" && (
+        <div className="mt-3">
           <textarea
             value={answer}
             onChange={(e) => setAnswer(e.target.value)}
             rows={7}
-            placeholder="Speak the answer in your head and type it here. Aim for 50-180 words. Be specific and use concrete examples."
+            placeholder="Type your answer. Aim for 50-180 words. Be specific and use concrete examples."
             className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm placeholder:text-slate-400 focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-200"
           />
           <div className="flex items-center justify-between mt-2">
             <span className="text-xs text-slate-400">
               {answer.trim().split(/\s+/).filter(Boolean).length} words
             </span>
-            <Button onClick={submit} loading={submitting} disabled={!answer.trim()}>
+            <Button onClick={submitText} loading={submitting} disabled={!answer.trim()}>
               {isLast ? "Submit & Finish" : "Submit & Next"} <ChevronRight size={16} />
             </Button>
           </div>
@@ -217,7 +290,7 @@ export default function InterviewSessionPage() {
       )}
 
       <p className="mt-8 text-xs text-slate-400 text-center">
-        🎙️ Voice answers and 📷 webcam analysis will be enabled in Phase 8 &amp; 10.
+        📷 Webcam-based body-language analysis is enabled in Phase 10.
       </p>
     </div>
   );

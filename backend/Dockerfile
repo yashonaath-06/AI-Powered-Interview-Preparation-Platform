@@ -8,14 +8,16 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     libpq-dev \
     curl \
+    ffmpeg \
  && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
 # install python deps first for better caching
-COPY requirements.txt .
+COPY requirements.txt requirements-ml.txt ./
 RUN pip install --no-cache-dir --upgrade pip \
- && pip install --no-cache-dir -r requirements.txt
+ && pip install --no-cache-dir -r requirements.txt \
+ && pip install --no-cache-dir -r requirements-ml.txt
 
 # copy source last
 COPY . .

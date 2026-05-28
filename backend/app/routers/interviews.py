@@ -8,10 +8,11 @@ GET    /api/interviews                    list my sessions
 GET    /api/interviews/{id}               session + progress
 GET    /api/interviews/{id}/next          current/next question
 POST   /api/interviews/{id}/answer        submit answer (text)
+POST   /api/interviews/{id}/answer/audio  submit spoken answer (Phase 8)
 POST   /api/interviews/{id}/complete      finalize + score
 GET    /api/interviews/{id}/report        full report (after complete)
 """
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 from sqlalchemy import desc, select
 from sqlalchemy.orm import Session
 
@@ -19,6 +20,7 @@ from app.core.deps import get_current_user, get_db
 from app.models.interview import InterviewSession
 from app.models.user import User
 from app.schemas.interview import (
+    AudioAnswerResponse,
     QuestionOut,
     ReportItem,
     SessionProgress,
@@ -29,7 +31,7 @@ from app.schemas.interview import (
     SubmitAnswerRequest,
     SubmitAnswerResponse,
 )
-from app.services import interview_engine
+from app.services import interview_engine, speech_service
 
 router = APIRouter()
 
@@ -162,6 +164,90 @@ def submit_answer(
         answered_count=p["answered_count"],
         total_questions=p["total_questions"],
         finished=finished,
+    )
+
+
+# ---------- submit audio answer (Phase 8) ----------------------------------
+
+@router.post(
+    "/{session_id}/answer/audio",
+    response_model=AudioAnswerResponse,
+    summary="Submit a SPOKEN answer — transcribed by Whisper, then scored",
+)
+async def submit_audio_answer(
+    session_id: int,
+    audio: UploadFile = File(..., description="Audio blob (webm/ogg/wav/mp3)"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    if not speech_service.is_available():
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=(
+                "Speech-to-text is not enabled on this server. Install "
+                "requirements-ml.txt to enable Whisper transcription, or "
+                "submit a text answer instead via /answer."
+            ),
+        )
+
+    raw = await audio.read()
+    if not raw:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Empty audio upload.",
+        )
+
+    # Soft cap: 15MB ≈ ~10 min of opus-encoded mono speech
+    if len(raw) > 15 * 1024 * 1024:
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail="Audio file is too large (limit: 15 MB).",
+        )
+
+    # ---- 1. Transcribe ----
+    ext = "webm"
+    if audio.filename and "." in audio.filename:
+        ext = audio.filename.rsplit(".", 1)[1].lower()
+    try:
+        result = speech_service.transcribe_bytes(raw, file_extension=ext)
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Could not transcribe audio: {exc}",
+        )
+
+    if not result.transcript.strip():
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=(
+                "Whisper produced an empty transcript — your microphone may "
+                "have been muted, or the answer was inaudible. Please try again."
+            ),
+        )
+
+    # ---- 2. Run the same scoring pipeline as text answers ----
+    answer, next_q = interview_engine.submit_answer(
+        db,
+        user=current_user,
+        session_id=session_id,
+        answer_text=result.transcript,
+        duration_seconds=result.duration_seconds,
+    )
+
+    p = interview_engine.get_session_with_progress(
+        db, user=current_user, session_id=session_id
+    )
+    import json
+    return AudioAnswerResponse(
+        answer_id=answer.id,
+        scores=json.loads(answer.nlp_scores or "{}"),
+        next_question=QuestionOut.model_validate(next_q) if next_q else None,
+        answered_count=p["answered_count"],
+        total_questions=p["total_questions"],
+        finished=next_q is None,
+        transcript=result.transcript,
+        detected_language=result.language,
+        audio_duration_seconds=result.duration_seconds,
     )
 
 

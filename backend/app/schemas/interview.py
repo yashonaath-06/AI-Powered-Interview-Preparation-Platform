@@ -54,6 +54,12 @@ class SubmitAnswerResponse(BaseModel):
     finished: bool
 
 
+class AudioAnswerResponse(SubmitAnswerResponse):
+    transcript: str
+    detected_language: str | None = None
+    audio_duration_seconds: float | None = None
+
+
 class SessionSummary(BaseModel):
     id: int
     company: str | None
