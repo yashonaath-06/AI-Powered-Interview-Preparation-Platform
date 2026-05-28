@@ -30,6 +30,11 @@ class Settings(BaseSettings):
     huggingface_token: str | None = None
     whisper_model: str = "tiny.en"  # tiny.en | base.en | small.en | medium.en
 
+    # --- Admin ---
+    # Comma-separated list of emails that are automatically granted admin role
+    # on signup. Useful for one-click demo / first-user setup.
+    admin_emails: str = ""
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
@@ -40,6 +45,10 @@ class Settings(BaseSettings):
     @property
     def cors_origins_list(self) -> List[str]:
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
+
+    @property
+    def admin_emails_list(self) -> List[str]:
+        return [e.strip().lower() for e in self.admin_emails.split(",") if e.strip()]
 
 
 @lru_cache

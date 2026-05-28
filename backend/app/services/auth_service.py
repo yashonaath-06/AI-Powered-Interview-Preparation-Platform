@@ -19,6 +19,8 @@ from app.schemas.auth import LoginRequest, SignupRequest
 
 def signup(db: Session, payload: SignupRequest) -> tuple[User, str]:
     """Create a new user. Returns (user, jwt). Raises 409 on duplicate email."""
+    from app.config import settings
+
     existing = db.scalar(select(User).where(User.email == payload.email))
     if existing is not None:
         raise HTTPException(
@@ -26,11 +28,14 @@ def signup(db: Session, payload: SignupRequest) -> tuple[User, str]:
             detail="An account with this email already exists.",
         )
 
+    # Auto-promote whitelisted emails (configured via ADMIN_EMAILS env).
+    role = "admin" if payload.email.lower() in settings.admin_emails_list else "user"
+
     user = User(
         email=payload.email,
         full_name=payload.full_name.strip(),
         hashed_password=hash_password(payload.password),
-        role="user",
+        role=role,
     )
     db.add(user)
     db.commit()
