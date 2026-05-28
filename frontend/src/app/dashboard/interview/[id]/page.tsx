@@ -1,12 +1,11 @@
 "use client";
 /**
- * Live interview session — Phase 8 (voice-first).
+ * Live interview session — Phases 8 + 10.
  *
- * Default: candidate records their answer with the mic; Whisper transcribes
- * server-side. Users can switch to typing if their browser doesn't support
- * MediaRecorder, or if they prefer.
- *
- * Phase 10 will add the live webcam panel + per-frame vision metrics.
+ * Voice-first answer flow (Whisper STT) and a live webcam panel that
+ * uploads ~1 frame every 2 s for MediaPipe analysis. Per-question vision
+ * summary is bundled with the answer submission so the scorer can fold it
+ * into the engagement / confidence dimensions.
  */
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
@@ -18,6 +17,7 @@ import { api } from "@/lib/api";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { RecordingControls } from "@/components/interview/RecordingControls";
+import { WebcamPanel, WebcamPanelHandle } from "@/components/interview/WebcamPanel";
 import { AudioRecorder } from "@/lib/audio";
 
 interface Question {
@@ -56,6 +56,7 @@ export default function InterviewSessionPage() {
   const [completing, setCompleting] = useState(false);
   const [lastTranscript, setLastTranscript] = useState<string | null>(null);
   const startedAt = useRef<number>(Date.now());
+  const webcamRef = useRef<WebcamPanelHandle>(null);
 
   const progress = useQuery<Progress>({
     queryKey: ["interview-progress", sessionId],
@@ -106,9 +107,11 @@ export default function InterviewSessionPage() {
     setSubmitting(true);
     try {
       const duration = (Date.now() - startedAt.current) / 1000;
+      const visionSummary = await webcamRef.current?.getSummaryAndReset();
       const { data } = await api.post(`/api/interviews/${sessionId}/answer`, {
         answer_text: answer,
         duration_seconds: duration,
+        vision_summary: visionSummary,
       });
       await handleAnswerSuccess(data);
     } catch (err: any) {
@@ -123,6 +126,10 @@ export default function InterviewSessionPage() {
     try {
       const fd = new FormData();
       fd.append("audio", blob, `answer.${ext}`);
+      const visionSummary = await webcamRef.current?.getSummaryAndReset();
+      if (visionSummary) {
+        fd.append("vision_summary", JSON.stringify(visionSummary));
+      }
       const { data } = await api.post(
         `/api/interviews/${sessionId}/answer/audio`,
         fd,
@@ -132,7 +139,6 @@ export default function InterviewSessionPage() {
     } catch (err: any) {
       const detail = err?.response?.data?.detail || "Failed to upload answer";
       toast.error(detail);
-      // If STT is unavailable, hint the user to switch to text mode
       if (err?.response?.status === 503) setMode("text");
     } finally {
       setSubmitting(false);
@@ -203,6 +209,13 @@ export default function InterviewSessionPage() {
           style={{ width: `${progressPct}%` }}
         />
       </div>
+
+      {/* Live webcam panel */}
+      {q && (
+        <div className="mb-6">
+          <WebcamPanel ref={webcamRef} sessionId={sessionId} />
+        </div>
+      )}
 
       {/* Question card */}
       {q ? (
@@ -290,7 +303,7 @@ export default function InterviewSessionPage() {
       )}
 
       <p className="mt-8 text-xs text-slate-400 text-center">
-        📷 Webcam-based body-language analysis is enabled in Phase 10.
+        🤖 Powered by Whisper (speech) · sentence-transformers (NLP) · MediaPipe (vision)
       </p>
     </div>
   );

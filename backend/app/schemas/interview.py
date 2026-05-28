@@ -22,6 +22,7 @@ class StartInterviewRequest(BaseModel):
 class SubmitAnswerRequest(BaseModel):
     answer_text: str = Field(min_length=1)
     duration_seconds: float | None = Field(default=None, ge=0)
+    vision_summary: dict[str, Any] | None = None
 
 
 # ---- Outputs --------------------------------------------------------------

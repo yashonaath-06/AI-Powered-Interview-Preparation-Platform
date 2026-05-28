@@ -23,7 +23,11 @@ textstat>=0.7.3
 # torch is pulled in transitively by sentence-transformers; on Linux/macOS the
 # default wheel is the CPU build (~200 MB). For Windows/CUDA see PyTorch docs.
 
-# ---- Phase 10: Computer vision  (added in PR #6) ----
-# mediapipe>=0.10.14
-# opencv-python-headless>=4.10.0
-# Pillow>=10.0
+# ---- Phase 10: Computer vision ----
+mediapipe==0.10.14
+opencv-python>=4.10.0,<5.0.0
+Pillow>=10.0
+# NOTE: mediapipe 0.10.14 ships its own opencv-python dependency. On Linux
+# you may need 'libGL.so.1' system-wide:
+#     dnf install mesa-libGL          # Amazon Linux / Fedora / RHEL
+#     apt-get install -y libgl1       # Debian / Ubuntu
