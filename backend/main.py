@@ -1,16 +1,8 @@
 """
 ================================================================
- main.py  —  Application entry-point for the FastAPI backend.
+ main.py  —  FastAPI application entry-point.
 
- What this file does:
-   1. Loads settings from .env
-   2. Creates the FastAPI app
-   3. Configures CORS (so the frontend can call the backend)
-   4. Mounts every router under /api/...
-   5. Provides /health and / endpoints used by Docker & humans
-
- In later phases this file barely changes — we just add new
- routers to the `routers` list below.
+ Loads settings, builds the app, mounts every router under /api/.
 ================================================================
 """
 from contextlib import asynccontextmanager
@@ -21,11 +13,20 @@ from loguru import logger
 
 from app.config import settings
 from app.database import init_db
+from app.routers import (
+    admin,
+    analytics,
+    auth,
+    health,
+    interviews,
+    questions,
+    resume,
+    users,
+)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Run once at startup and once at shutdown."""
     logger.info("🚀 Starting AI Interview Prep backend...")
     init_db()
     logger.info("✅ Database initialized.")
@@ -40,9 +41,10 @@ app = FastAPI(
         "Provides authentication, the interview engine, NLP / vision / "
         "speech analysis, resume parsing, and analytics."
     ),
-    version="0.1.0",
+    version="0.2.0",
     lifespan=lifespan,
 )
+
 
 # ---- CORS ------------------------------------------------------
 app.add_middleware(
@@ -55,10 +57,14 @@ app.add_middleware(
 
 
 # ---- Routers ---------------------------------------------------
-# (Routers are added phase by phase. They live in app/routers/.)
-from app.routers import health  # noqa: E402
-
-app.include_router(health.router, prefix="/api", tags=["health"])
+app.include_router(health.router,     prefix="/api",            tags=["health"])
+app.include_router(auth.router,       prefix="/api/auth",       tags=["auth"])
+app.include_router(users.router,      prefix="/api/users",      tags=["users"])
+app.include_router(interviews.router, prefix="/api/interviews", tags=["interviews"])
+app.include_router(questions.router,  prefix="/api/questions",  tags=["questions"])
+app.include_router(resume.router,     prefix="/api/resume",     tags=["resume"])
+app.include_router(analytics.router,  prefix="/api/analytics",  tags=["analytics"])
+app.include_router(admin.router,      prefix="/api/admin",      tags=["admin"])
 
 
 # ---- Friendly root ---------------------------------------------

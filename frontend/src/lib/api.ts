@@ -1,12 +1,11 @@
 /**
- * Tiny axios wrapper so every component talks to the backend
- * through a single configured client.
+ * Tiny axios wrapper. Every component should import `api` from here so
+ * there is a single configured client.
  *
- * Usage:
- *   import { api } from "@/lib/api";
- *   const { data } = await api.get("/api/health");
+ * Auth token is attached automatically from the Zustand store.
  */
 import axios from "axios";
+import { useAuthStore } from "@/store/authStore";
 
 export const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000",
@@ -14,11 +13,25 @@ export const api = axios.create({
   headers: { "Content-Type": "application/json" },
 });
 
-// In Phase 6 we'll attach the JWT here automatically.
 api.interceptors.request.use((config) => {
-  if (typeof window !== "undefined") {
-    const token = localStorage.getItem("token");
-    if (token) config.headers.Authorization = `Bearer ${token}`;
+  const token = useAuthStore.getState().token;
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
   }
   return config;
 });
+
+// Auto-logout on 401 so users aren't stuck with a stale token.
+api.interceptors.response.use(
+  (r) => r,
+  (err) => {
+    if (err?.response?.status === 401 && typeof window !== "undefined") {
+      const path = window.location.pathname;
+      // Don't auto-logout on the login/signup pages themselves
+      if (!path.startsWith("/login") && !path.startsWith("/signup")) {
+        useAuthStore.getState().logout();
+      }
+    }
+    return Promise.reject(err);
+  },
+);
