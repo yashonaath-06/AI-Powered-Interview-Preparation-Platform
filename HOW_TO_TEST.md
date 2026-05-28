@@ -154,6 +154,38 @@ Restart the backend, refresh the interview page, click **Allow** on the camera p
 
 ---
 
+## 🛠️ Optional: become an admin and use the admin panel (Phase 12)
+
+Two ways to get an admin account:
+
+### Option A — auto-promote via `.env`
+Edit `backend/.env` (or the root `.env` if running via Docker) and add your email to `ADMIN_EMAILS`:
+```
+ADMIN_EMAILS=you@example.com
+```
+Restart the backend. Now sign up with that exact email — your account is created with `role=admin`.
+
+### Option B — promote an existing user via CLI
+```bash
+cd backend
+source .venv/bin/activate          # Windows: .\.venv\Scripts\Activate.ps1
+python -m app.cli list-users
+python -m app.cli make-admin you@example.com
+```
+
+Then log in. You'll see a new **Admin** link in the sidebar. Visit:
+
+| Route | What you can do |
+|---|---|
+| `/admin` | Platform stats: total users, sessions, completion rate, top companies, newest users |
+| `/admin/users` | List + search users, promote/demote, delete (cannot demote/delete yourself) |
+| `/admin/questions` | Full CRUD on the question bank — add new questions with company/role/keywords/sample answer |
+| `/admin/sessions` | Recent activity feed across all users |
+
+🟢 Non-admin users hitting any `/admin/*` route get redirected to `/dashboard` automatically.
+
+---
+
 ## 🧰 Even quicker: run everything with Docker (one command)
 
 If you have Docker Desktop:

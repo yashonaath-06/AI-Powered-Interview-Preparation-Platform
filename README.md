@@ -93,7 +93,7 @@ This project is built in 20 phases. Tracked in detail in [`ARCHITECTURE.md`](ARC
 - [x] Phase 9 — NLP evaluation
 - [x] Phase 10 — Computer vision
 - [x] Phase 11 — Analytics dashboard
-- [ ] Phase 12 — Admin panel
+- [x] Phase 12 — Admin panel
 - [ ] Phase 13 — Resume analyzer
 - [ ] Phase 14 — Tests
 - [ ] Phase 15 — Deployment
